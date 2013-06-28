@@ -3,7 +3,7 @@ psutils
 
 A collection of command line utilities written in Powershell, proudly ignoring Powershell Verb-Noun naming conventions.
 
-These are designed to be installed with [Scoop](https://scoop.sh).
+These are designed to be installed with [Scoop](http://scoop.sh).
 
 
 * *runat* - A replacement for the `at` command which Microsoft has deprecated and removed in Windows 2012.
