@@ -12,8 +12,8 @@ if(!$xx) { $xx = (get-uiculture).twoLetterISOLanguageName }
 
 $vim = scoop which vim
 if(!$vim) {
-    try { $vim = gcm vim -ea 0 } catch { }
-    "vim isn't installed."; exit 1
+    try { $vim = (gcm vim -ea 0).path } # fallback, not using scoop
+    catch { "vim isn't installed."; exit 1 }
 }
 
 $vimdir = split-path $vim
