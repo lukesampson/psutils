@@ -1,4 +1,6 @@
-param($cmd)
+param($cmd,$path)
+
+$usage = "usage: consp import|export <path>"
 
 # registry reference:
 #     http://technet.microsoft.com/en-us/library/cc978570.aspx
@@ -6,7 +8,7 @@ param($cmd)
 # setting NT_CONSOLE_PROPS (not implemented):
 #     http://sourcewarp.blogspot.com.au/2012/06/windows-powershell-shortcut-ishelllink.html
 
-$colors = 'black,blue,green,aqua,red,purple,yellow,white,gray,light_blue,light_green,light_aqua,light_red,light_purple,light_yellow,bright_white'.split(',')
+$colors = 'black,dark_blue,dark_green,dark_cyan,dark_red,dark_purple,dark_yellow,gray,dark_gray,blue,green,cyan,red,purple,yellow,white'.split(',')
 
 $map = @{
 	'FontFamily'=@('font_true_type', 'font_type')
@@ -149,10 +151,33 @@ function encode($val, $type) {
 	}
 }
 
+# handle the command
+switch($cmd) {
+	'import' {
+		if(!$path) { "ERROR: path missing"; $usage; exit 1 }
+		if(!(test-path $path)) { "couldn't find file: $path" }
+		import (gc $path -raw)
+		write-host "console settings were imported from $(split-path $path -leaf)" -f darkgreen
+		write-host "please note:
+ * you'll need to restart the console to see the changes
+ * if you're starting console from a shortcut (.lnk), it may override your
+   settings! just use Windows key, 'powershell.exe'!"
+	}
+	'export' {
+		$json = get_json
+		if($path) {
+			$json | out-file $path -encoding utf8
+			write-host "console settings exported to $(split-path $path -leaf)" -f darkgreen
+		}
+		else { $json }
+	}
+	default { $usage }
+}
+
 # testing 
 $path = split-path $myinvocation.mycommand.path
 $default = "$path\consp\solarized.json"
-import (gc $default -raw)
+
 
 
 # get_json
