@@ -28,8 +28,13 @@ $map = @{
 for($i=0;$i -lt $colors.length;$i++) {
 	$map.add("ColorTable$($i.tostring('00'))", @($colors[$i],'color'))
 }
+$reverse_map = @{}
+foreach($key in $map.keys) {
+	$name,$type = $map[$key]
+	$reverse_map.add($name, @($key,$type))
+}
 
-function get_json {
+function export {
 	$props = @{}
 	(gp hkcu:\console).psobject.properties | sort name |% {
 		$name,$type = $map[$_.name]
@@ -39,6 +44,24 @@ function get_json {
 	}
 
 	$props | convertto-json
+}
+
+function import($json) {
+	$props = $json | convertfrom-json
+
+	# encode everything first before setting registry values, in case
+	# anything goes wrong
+	$encoded = @{}
+
+	$props.psobject.properties | % {
+		$key,$type = $reverse_map[$_.name]
+		$val = $_.value
+		if($key) { $encoded[$key] = (encode $val $type) }
+	}
+
+	$encoded.keys | % { 
+		sp hkcu:\console $_ $encoded[$_]
+	}
 }
 
 function decode($val, $type) {
@@ -54,8 +77,8 @@ function decode($val, $type) {
 		'cursor' {
 			switch($val) {
 				0x19 { 'small' }
-				0x32 { 'small' }
-				0x64 { 'small' }
+				0x32 { 'medium' }
+				0x64 { 'large' }
 			}
 		}
 		'fg_bg' {
@@ -80,9 +103,57 @@ function decode($val, $type) {
 
 function encode($val, $type) {
 	switch($type) {
-		default { 'NOT IMPLEMENTED'}
+		'bool' { if($val) { 1 } else { 0 } }
+		'color' {
+			if($val -notmatch '^#[\da-f]{6}$') {
+				write-host "ERROR: invalid color '$val', should be in hex format, e.g. #000000" -f r
+				exit 1
+			}
+			$num = [convert]::toint32($val.substring(1,6), 16)
+			$bytes = [bitconverter]::getbytes($num)
+			for($i = 3; $i -gt 0; $i--) { $bytes[$i] = $bytes[$i-1] }
+			$bytes[0] = 0
+			[array]::reverse($bytes)
+			[bitconverter]::toint32($bytes, 0)
+		}
+		'cursor' {
+			switch($val) {
+				'small'  { 0x19 }
+				'medium' { 0x32 }
+				'large'  { 0x64 }
+				default {
+					write-host "WARNING: invalid cursor_size '$val', defaulting to 'small'" -f yellow
+					0x19
+				}
+			}
+		}
+		'fg_bg' {
+			$fg,$bg = $val.split(',')
+			if(!$fg -or !$bg) { write-host "invalid foreground,background: $val" -f red; exit 1 }
+			$fg_i = $colors.indexof($fg)
+			$bg_i = $colors.indexof($bg)
+			if($fg_i -eq -1) { write-host "invalid foreground color: $fg" -f red; exit 1 }
+			if($bg_i -eq -1) { write-host "invalid background color: $bg" -f red; exit 1 }
+			$bg_i * 16 + $fg_i
+		}
+		'int' { $val }
+		'string' { $val }
+		'dim' {
+			if($val -notmatch '^\d+x\d+$') { write-host "invalid dimensions '$val'" -f red; exit 1}
+			$width, $height = $val.split('x') | % { [int16]::parse($_) }
+			$width_b = [bitconverter]::getbytes($width)
+			$height_b = [bitconverter]::getbytes($height)
+			[byte[]]$bytes = @($width_b[0], $width_b[1], $height_b[0], $height_b[1])
+			"$([bitconverter]::toint32($bytes, 0))"
+		}
 	}
 }
 
-get_json
+# testing 
+$path = split-path $myinvocation.mycommand.path
+$default = "$path\consp\solarized.json"
+import (gc $default -raw)
+
+
+# get_json
 #encode $true 'bool'
