@@ -7,6 +7,9 @@ $opts   = new-object collections.hashtable # stores parsed options
 $files  = @()                              # stored parsed files
 
 function dbg($msg) { write-host $msg -f darkyellow }  # temp debugging
+function expand($path) {
+    $executionContext.sessionState.path.getUnresolvedProviderPathFromPSPath($path)
+}
 
 # parse flags
 for($i = 0; $i -lt $args.length; $i++) {
@@ -78,7 +81,15 @@ if($opts.t) {
     } else { $err; exit }
 }
 
-$opts
+$opts # debugging
+
+if(!$files) { $usage ;exit 1 }
+
+foreach($file in $files) {
+    if(!(test-path $file)) { 
+        if(!$opts.c -and !$opts.A) { [io.file]::create((expand $file)).close() }
+    }
+}
 
 exit 0
 
