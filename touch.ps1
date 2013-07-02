@@ -6,7 +6,7 @@ $pflags = 'Art'.tochararray()              # defines options with a parameter
 $opts   = new-object collections.hashtable # stores parsed options
 $files  = @()                              # stored parsed files
 
-function dbg($msg) { write-host $msg -f darkyellow }  # temp debugging
+function dbg($msg) { write-host $msg -f darkyellow }  # for debugging
 function expand($path) {
     $executionContext.sessionState.path.getUnresolvedProviderPathFromPSPath($path)
 }
@@ -81,15 +81,26 @@ if($opts.t) {
     } else { $err; exit }
 }
 
-$opts # debugging
-
 if(!$files) { $usage ;exit 1 }
 
+$mod = $acc = [datetime]::now;
+if($opts.r) {
+    if(!$(test-path $opts.r)) { "touch: $($opts.r): no such file or directory"; exit 1 }
+    $f = (gp $opts.r)
+    $mod, $acc = $f.lastwritetime, $f.lastaccesstime
+}
+if($opts.t) { $mod = $acc = $opts.t }
+if($opts.A) { $mod -= $opts.A; $acc -= $opts.A }
+
 foreach($file in $files) {
-    if(!(test-path $file)) { 
-        if(!$opts.c -and !$opts.A) { [io.file]::create((expand $file)).close() }
+    if(!(test-path $file)) { # file doesn't exist
+        if($opts.c -or $opts.A) { continue } # A implies c: silently ignore these
+        [io.file]::create((expand $file)).close() # create 0-byte file
     }
+    
+    # set timestamps
+    if($opts.a -or !$opts.c) { sp $file lastaccesstime "$acc" }
+    if($opts.c -or !$opts.a) { sp $file lastwritetime "$mod" }
 }
 
 exit 0
-
