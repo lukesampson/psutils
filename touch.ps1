@@ -37,7 +37,7 @@ for($i = 0; $i -lt $args.length; $i++) {
             "touch: illegal option $($arg[1..($arg.length - 1)])"; $usage; exit 1
         }
     } else {
-        $files += $args[$i..($args.length - 1)] # everything else is a file
+        $files += $args[$i..($args.length - 1)]; break # everything else is a file
     }
 }
 
