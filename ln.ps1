@@ -134,7 +134,7 @@ if(!$target) { "ln: TARGET is required"; $usage; exit 1 }
 if(!$link_name) { "ln: LINK_NAME is required"; $usage; exit 1 }
 
 if(!([io.path]::ispathrooted($link_name))) {
-    $link_name = "$psscriptroot\$link_name"
+    $link_name = "$pwd\$link_name"
 }
 
 if(!(test-path $target)) {
