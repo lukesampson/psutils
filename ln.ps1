@@ -139,11 +139,11 @@ if(!$link_name) {
 }
 
 if(!(test-path $target)) {
-    "ln: $target: No such file or directory"; exit 1
+    "ln: $target`: No such file or directory"; exit 1
 }
 
 if(test-path $link_name) {
-    "ln: $link_name: File exists"
+    "ln: $link_name`: File exists"
 }
 
 $target = "$(resolve-path $target)"
