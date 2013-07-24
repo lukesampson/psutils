@@ -119,17 +119,6 @@ function hardlink($target, $link_name) {
     if(!$result) { "failed!"; exit 1 } # mysterious
 }
 
-if(!(isadmin)) {
-    if(gcm 'sudo' -ea silent) {
-        "ln: must run elevated: try using 'sudo ln ...'."
-    } else {
-        if(gcm 'scoop' -ea silent) {
-            "ln: must run elevated: you can install 'sudo' by running 'scoop install sudo'."
-        } else { "ln: must run elevated" }
-    }
-    exit 1
-}
-
 $symbolic = $false
 $target = $args[0]
 $link_name = $args[1]
@@ -161,12 +150,24 @@ if($target -eq $link_name) {
     "ln: TARGET and LINK_NAME are the same"; exit 1
 }
 
+if(!$symbolic -and $is_dir) {
+    "ln: can't create hard links for directories. use -s for symbolic link"; $usage; exit 1
+}
+
+if(!(isadmin)) {
+    if(gcm 'sudo' -ea silent) {
+        "ln: must run elevated: try using 'sudo ln ...'."
+    } else {
+        if(gcm 'scoop' -ea silent) {
+            "ln: must run elevated: you can install 'sudo' by running 'scoop install sudo'."
+        } else { "ln: must run elevated" }
+    }
+    exit 1
+}
+
 if($symbolic) {
     symlink $target $link_name $is_dir
 } else {
-    if($is_dir) {
-        "ln: can't create hard links for directories. use -s for symbolic link"; $usage; exit 1
-    }
     hardlink $target $link_name
 }
 
