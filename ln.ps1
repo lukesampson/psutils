@@ -1,5 +1,5 @@
 # bodge the ln command
-$usage = "usage: ln [-s] TARGET LINK_NAME"
+$usage = "usage: ln [-s] <target> [link_name]"
 
 # original Invoke-WindowsAPI by Lee Holmes
 # http://poshcode.org/2189
@@ -130,15 +130,20 @@ if($target -like '-s') {
     $link_name = $args[2]
 }
 
-if(!$target) { "ln: TARGET is required"; $usage; exit 1 }
-if(!$link_name) { "ln: LINK_NAME is required"; $usage; exit 1 }
-
-if(!([io.path]::ispathrooted($link_name))) {
+if(!$target) { "ln: target is required"; $usage; exit 1 }
+if(!$link_name) {
+    # create link in working dir, with same name as target
+    $link_name = "$pwd\$(split-path $target -leaf)"
+} elseif(!([io.path]::ispathrooted($link_name))) {
     $link_name = "$pwd\$link_name"
 }
 
 if(!(test-path $target)) {
-    "ln: TARGET doesn't exist!"; exit 1
+    "ln: $target: No such file or directory"; exit 1
+}
+
+if(test-path $link_name) {
+    "ln: $link_name: File exists"
 }
 
 $target = "$(resolve-path $target)"
@@ -147,20 +152,20 @@ if([io.directory]::exists($target)) {
 }
 
 if($target -eq $link_name) {
-    "ln: TARGET and LINK_NAME are the same"; exit 1
+    "ln: target and link_name are the same"; usage; exit 1
 }
 
 if(!$symbolic -and $is_dir) {
-    "ln: can't create hard links for directories. use -s for symbolic link"; $usage; exit 1
+    "ln: Can't create hard links for directories: use -s for symbolic link"; $usage; exit 1
 }
 
 if(!(isadmin)) {
     if(gcm 'sudo' -ea silent) {
-        "ln: must run elevated: try using 'sudo ln ...'."
+        "ln: Must run elevated: try using 'sudo ln ...'."
     } else {
         if(gcm 'scoop' -ea silent) {
-            "ln: must run elevated: you can install 'sudo' by running 'scoop install sudo'."
-        } else { "ln: must run elevated" }
+            "ln: Must run elevated: you can install 'sudo' by running 'scoop install sudo'."
+        } else { "ln: Must run elevated" }
     }
     exit 1
 }
