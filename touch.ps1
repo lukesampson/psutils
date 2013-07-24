@@ -3,7 +3,7 @@ touch [-A [-][[hh]mm]SS] [-acm] [-r file] [-t [[CC]YY]MMDDhhmm[.SS]] file ..."
 
 $flags  = 'acm'.tochararray()              # defines options without a parameter
 $pflags = 'Art'.tochararray()              # defines options with a parameter
-$opts   = new-object collections.hashtable # stores parsed options
+$opts   = new-object collections.hashtable # stores parsed options (case-sensitive keys)
 $files  = @()                              # stored parsed files
 
 function dbg($msg) { write-host $msg -f darkyellow }  # for debugging
