@@ -1,10 +1,9 @@
 # bodge the ln command
-# usage ln [-s] TARGET LINK_NAME
-
+$usage = "usage: ln [-s] TARGET LINK_NAME"
 
 # original Invoke-WindowsAPI by Lee Holmes
 # http://poshcode.org/2189
-function Invoke-WindowsAPI {
+function pinvoke {
     param(
         ## The name of the DLL that contains the Windows API, such as "kernel32"
         [string] $DllName,
@@ -96,41 +95,79 @@ function isadmin {
     $p.IsInRole("Administrators")
 }
 
+function symlink($target, $link_name, $is_dir) {
+    $dwFlags = 0
+    if($is_dir) { $dwFlags = 1 }
+    $parameterTypes = [string], [string], [int]
+    $parameters = [string] $link_name, [string] $target, $dwFlags
+
+    # CreateSymbolicLink:
+    #     http://msdn.microsoft.com/en-us/library/aa363866.aspx
+    $result = pinvoke "kernel32" ([bool]) "CreateSymbolicLink" $parameterTypes $parameters
+
+    if(!$result) { "failed!"; exit 1 } # mysterious
+}
+
+function hardlink($target, $link_name) {
+    $parameterTypes = [string], [string], [intptr]
+    $parameters = [string] $link_name, [string] $target, [intptr]::zero
+
+    # CreateHardLink:
+    #     http://msdn.microsoft.com/en-us/library/aa363860.aspx
+    $result = pinvoke "kernel32" ([bool]) "CreateHardLink" $parameterTypes $parameters
+
+    if(!$result) { "failed!"; exit 1 } # mysterious
+}
+
 if(!(isadmin)) {
     if(gcm 'sudo' -ea silent) {
-        "must be run elevated: try using 'sudo ln...'."
+        "ln: must run elevated: try using 'sudo ln ...'."
     } else {
         if(gcm 'scoop' -ea silent) {
-            "must be run elevated: you can install 'sudo' by running 'scoop install sudo'."
-        } else {
-            "must be run elevated"
-        }
+            "ln: must run elevated: you can install 'sudo' by running 'scoop install sudo'."
+        } else { "ln: must run elevated" }
     }
+    exit 1
+}
 
-    exit 1 }
-
+$symbolic = $false
 $target = $args[0]
 $link_name = $args[1]
+$is_dir = $false
 
-if(!$target) { "target is required"; exit 1 }
-if(!$link_name) { "link name is required"; exit 1 }
+if($target -like '-s') {
+    $symbolic = $true
+    $target = $args[1]
+    $link_name = $args[2]
+}
+
+if(!$target) { "ln: TARGET is required"; $usage; exit 1 }
+if(!$link_name) { "ln: LINK_NAME is required"; $usage; exit 1 }
 
 if(!([io.path]::ispathrooted($link_name))) {
     $link_name = "$psscriptroot\$link_name"
 }
 
+if(!(test-path $target)) {
+    "ln: TARGET doesn't exist!"; exit 1
+}
+
 $target = "$(resolve-path $target)"
+if([io.directory]::exists($target)) {
+    $is_dir = $true
+}
 
-echo "$link_name -> $target"
+if($target -eq $link_name) {
+    "ln: TARGET and LINK_NAME are the same"; exit 1
+}
 
-$parameterTypes = [string], [string], [int]
-$parameters = [string] $link_name, [string] $target, 0
-
-# CreateSymbolicLink:
-#     http://msdn.microsoft.com/en-us/library/aa363866.aspx
-$result = Invoke-WindowsApi "kernel32" ([bool]) "CreateSymbolicLink" $parameterTypes $parameters
-
-if($result) { "failed"; exit 1 } # mysterious
-
+if($symbolic) {
+    symlink $target $link_name $is_dir
+} else {
+    if($is_dir) {
+        "ln: can't create hard links for directories. use -s for symbolic link"; $usage; exit 1
+    }
+    hardlink $target $link_name
+}
 
 exit 0
