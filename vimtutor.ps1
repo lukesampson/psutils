@@ -29,6 +29,6 @@ $env:xx = $xx               # language code
 vim -u NONE -c "so $vimdir\tutor\tutor.vim"
 
 # Start vim without any .vimrc, set 'nocompatible'
-vim -u NONE -c "set nocp;set shell=powershell" "$tutorcopy"
+vim -u NONE -c "set nocp" -c "set shell=powershell" "$tutorcopy"
 
 if(test-path $tutorcopy) { rm $tutorcopy }
