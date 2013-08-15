@@ -22,7 +22,7 @@ if(!$d -or !$c) { $usage; exit 1; }
 # /query for unused task name (returns exit code 1 when not found)
 $tn='';
 for($i=1;$true;$i++) {
-    & schtasks /query /tn "runat$i" 2>&1 | out-null
+    try { & schtasks /query /tn "runat$i" 2>&1 | out-null } catch { }
     if($lastexitcode -eq 1) { $tn = "runat$i"; break }
 }
 
