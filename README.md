@@ -7,6 +7,7 @@ These are designed to be installed with [Scoop](http://scoop.sh).
 
 * *ln* - An approximation of the Unix `ln` command.
 * *runat* - A replacement for the `at` command which Microsoft has deprecated and removed in Windows 2012.
+* *say* - An approximation of `say` from Mac OS X.
 * *sudo* - An approximation of the Unix `sudo` command. Shows a UAC popup window unfortunately.
 * *time* _ An approximation of the Unix `time` command.
 * *touch* - A port of the Unix `touch` command.
