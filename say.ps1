@@ -8,19 +8,21 @@ usage: say [-v voice] [-r rate] [-f file | <string> ...]
 
 OPTIONS:
   <string>
-    Specify the text to speak on the command line. This can consist of multiple arguments, which are
-    considered to be separated by spaces.
+    Specify the text to speak on the command line. This can consist of multiple
+    arguments, which are considered to be separated by spaces.
 
   -f file, --input-file=file
-    Specify a file to be spoken. If file is - or neither this parameter nor a message is specified,
-    read from standard input.
+    Specify a file to be spoken. If file is '-' or neither this parameter nor a
+    message is specified, read from standard input.
 
   -v <voice>, --voice <voice>
-    Specify the voice to be used. Default is the voice selected in the Control Panel. To obtain a
-    list of voices installed in the system, specify '?' as the voice name.
+    Specify the voice to be used. Default is the voice selected in the Control
+    Panel. To obtain a list of voices installed in the system, specify '?' as
+    the voice name.
 
   -r <rate>, --rate <rate>
-    Speech rate to be used, where -10 is the slowest and 10 is the fastest. Default is 0.
+    Speech rate to be used, where -10 is the slowest and 10 is the fastest.
+    Default is 0.
 "
 }
 
@@ -64,7 +66,7 @@ if($opt.rate) { $rate = $opt.rate }
 
 if($opt.h -or $opt.help) { show_help; exit 0 }
 
-if($file -and !(test-path $file)) {
+if($file -and ($file -ne '-') -and !(test-path $file)) {
 	"say: couldn't find input file: '$file'"; exit 1
 }
 
