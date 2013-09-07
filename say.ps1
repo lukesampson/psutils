@@ -50,7 +50,12 @@ function voices($voice) {
 function select_voice($voice, $voice_name) {
 	$voice.getvoices() | ? { $_.getattribute('name') -like $voice_name }
 } 
-function speak($voice, $msg) { $null = $voice.speak($msg, 0) }
+function speak($voice, $msg) {
+	$null = $voice.speak($msg, 1)
+	while($voice.status.runningstate -ne 1) {
+		start-sleep -m 100
+	}
+}
 
 
 $opt, $args, $err = getopt $args 'hf:v:r:' @('input-file=','voice=','rate=', 'help')
