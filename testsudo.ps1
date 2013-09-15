@@ -31,7 +31,6 @@ function serialize($a) {
 if($args[0] -eq '-do') {
 	$_, $dir, $parent_pid, $cmd = $args
 	$cmd = serialize $cmd
-	"cmd: $cmd"
 	cd $dir
 	$null = sudo_do $parent_pid $cmd
 	exit
@@ -50,6 +49,8 @@ try {
 	while($line = $sr.readline()) {
 		"client said: $line"
 	}
+} catch [InvalidOperationException] {
+	# user didn't provide consent: ignore
 } finally {
 	if($s) { $s.dispose() }
 }
