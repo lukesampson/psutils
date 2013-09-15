@@ -10,10 +10,15 @@ function sudo_do($parent_pid, $cmd) {
 			if(!$object) { return }
 			$sw.writeline($object.tostring())
 		}
-		function global:write-output($inputobject) {
-			@($inputobject) | % { if($_) { $sw.writeline($_.tostring()) } } 
+		function global:write-output (
+			[Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromRemainingArguments=$true)]
+			[allownull()]
+			[allowemptycollection()]
+			[psobject[]]
+			$inputobject) {
+				$inputobject | % { if($_) {	$sw.writeline("$_")	}
+			}
 		}
-
 		write-output (iex "$cmd")
 		
 	} finally {
