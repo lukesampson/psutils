@@ -8,7 +8,7 @@ function sudo_do($parent_pid, $cmd) {
 		$sw = new-object io.streamwriter $c
 		function global:write-host($object) {
 			if(!$object) { return }
-			$sw.writeline("$object")
+			$sw.writeline("$object"); $sw.flush();
 		}
 		function global:write-output (
 			[parameter(mandatory=$true, position=0, valueFromPipeline=$true, valueFromRemainingArguments=$true)]
@@ -19,7 +19,9 @@ function sudo_do($parent_pid, $cmd) {
 
 			$inputobject | % {
 				if($_) {
-					@($_) | % { $sw.writeline("$_") }
+					@($_) | % {
+						$sw.writeline("$_"); $sw.flush()
+					}
 				}
 			}
 		}
