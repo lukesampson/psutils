@@ -42,7 +42,7 @@ $a = serialize $args
 
 $s = new-object io.pipes.namedpipeserverstream "/tmp/sudo/$pid", 'in'
 try {
-	start powershell.exe -arg "-noexit -nologo $pwd\testsudo.ps1 -do $pwd $pid $a" -verb runas
+	$p = start powershell.exe -arg "-noexit -nologo & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
 	$s.waitforconnection()
 	"client connected"
 	$sr = new-object io.streamreader $s
