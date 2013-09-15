@@ -2,11 +2,9 @@ if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
 function sudo_do($parent_pid, $cmd) {
 	$a = @($a)
-	"parent pid: $parent_pid"
 	$c = new-object io.pipes.namedpipeclientstream '.', "/tmp/sudo/$parent_pid", 'out', 'none', 'anonymous'
 	try {
 		$c.connect()
-		write-host "connected" -f red
 		$sw = new-object io.streamwriter $c
 		function global:write-output($inputobject) {
 			@($inputobject) | % { if($_) { $sw.writeline($_.tostring()) } } 
@@ -37,18 +35,14 @@ if($args[0] -eq '-do') {
 }
 
 $a = serialize $args
-"serialized: $a"
 
 $s = new-object io.pipes.namedpipeserverstream "/tmp/sudo/$pid", 'in'
 try {
 	$p = start powershell.exe -arg "-noexit -nologo & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
 	$s.waitforconnection()
-	"client connected"
 	$sr = new-object io.streamreader $s
 	$line = $null
-	while($line = $sr.readline()) {
-		"client said: $line"
-	}
+	while($line = $sr.readline()) {	$line }
 } catch [InvalidOperationException] {
 	# user didn't provide consent: ignore
 } finally {
