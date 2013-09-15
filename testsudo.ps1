@@ -6,6 +6,10 @@ function sudo_do($parent_pid, $cmd) {
 	try {
 		$c.connect()
 		$sw = new-object io.streamwriter $c
+		function global:write-host($object) {
+			if(!$object) { return }
+			$sw.writeline($object.tostring())
+		}
 		function global:write-output($inputobject) {
 			@($inputobject) | % { if($_) { $sw.writeline($_.tostring()) } } 
 		}
@@ -38,7 +42,7 @@ $a = serialize $args
 
 $s = new-object io.pipes.namedpipeserverstream "/tmp/sudo/$pid", 'in'
 try {
-	$p = start powershell.exe -arg "-noexit -nologo & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
+	$p = start powershell.exe -arg "-nologo -window minimized & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
 	$s.waitforconnection()
 	$sr = new-object io.streamreader $s
 	$line = $null
