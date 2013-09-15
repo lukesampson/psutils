@@ -8,18 +8,26 @@ function sudo_do($parent_pid, $cmd) {
 		$sw = new-object io.streamwriter $c
 		function global:write-host($object) {
 			if(!$object) { return }
-			$sw.writeline($object.tostring())
+			$sw.writeline("$object")
 		}
 		function global:write-output (
-			[Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromRemainingArguments=$true)]
+			[parameter(mandatory=$true, position=0, valueFromPipeline=$true, valueFromRemainingArguments=$true)]
 			[allownull()]
 			[allowemptycollection()]
 			[psobject[]]
 			$inputobject) {
-				$inputobject | % { if($_) {	$sw.writeline("$_")	}
+
+			$inputobject | % {
+				if($_) {
+					@($_) | % { $sw.writeline("$_") }
+				}
 			}
 		}
-		write-output (iex "$cmd")
+		try {
+			write-output (iex "$cmd")
+		} catch {
+			$sw.writeline("error: $_")
+		}
 		
 	} finally {
 		if($sw) { $sw.flush() }
