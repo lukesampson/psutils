@@ -1,36 +1,23 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
-function sudo_do($parent_pid, $cmd) {
+function sudo_do($parent_pid, $dir, $cmd) {
 	$a = @($a)
 	$c = new-object io.pipes.namedpipeclientstream '.', "/tmp/sudo/$parent_pid", 'out', 'none', 'anonymous'
 	try {
 		$c.connect()
 		$sw = new-object io.streamwriter $c
-		function global:write-host($object) {
-			if(!$object) { return }
-			$sw.writeline("$object"); $sw.flush();
-		}
-		function global:write-output (
-			[parameter(mandatory=$true, position=0, valueFromPipeline=$true, valueFromRemainingArguments=$true)]
-			[allownull()]
-			[allowemptycollection()]
-			[psobject[]]
-			$inputobject) {
-
-			$inputobject | % {
-				if($_) {
-					@($_) | % {
-						$sw.writeline("$_"); $sw.flush()
-					}
-				}
-			}
-		}
-		try {
-			write-output (iex "$cmd")
-		} catch {
-			$sw.writeline("error: $_")
-		}
 		
+		$p = new-object diagnostics.process; $start = $p.startinfo
+		$start.filename = "powershell.exe"
+		$start.arguments = "-nologo $cmd"
+		$start.useshellexecute = $false
+		$start.redirectstandardoutput = $true
+		$start.workingdirectory = $dir
+		$p.start()
+
+		$line = $null
+		while($line = $p.standardoutput.readline()) { $sw.writeline($line); $sw.flush() }
+		$p.waitforexit();
 	} finally {
 		if($sw) { $sw.flush() }
 		if($c -and $c.isconnected) { $c.dispose() }
@@ -48,8 +35,7 @@ function serialize($a) {
 if($args[0] -eq '-do') {
 	$_, $dir, $parent_pid, $cmd = $args
 	$cmd = serialize $cmd
-	cd $dir
-	$null = sudo_do $parent_pid $cmd
+	$null = sudo_do $parent_pid $dir $cmd
 	exit
 }
 
