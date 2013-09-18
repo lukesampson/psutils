@@ -1,8 +1,15 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
-function is_elevated {
-	$id = [Security.Principal.WindowsIdentity]::GetCurrent()
+$id = [Security.Principal.WindowsIdentity]::GetCurrent()
+
+function is_elevated {	
 	([Security.Principal.WindowsPrincipal]($id)).isinrole("Administrators")
+}
+
+function is_admin {
+	$name = $id.name -replace '^[^\\]*\\', ''
+	$res = gwmi win32_groupuser | ? { $_.groupcomponent -match 'name="administrators"' -and $_.partcomponent -match "name=`"$name`"" }
+	if($res) { $true }
 }
 
 function sudo_do($parent_pid, $dir, $cmd) {
@@ -60,6 +67,11 @@ if(is_elevated) {
 	$cmd, $args = @($args)
 	& $cmd @($args)
 	exit $lastexitcode
+}
+
+if(!(is_admin)) {
+	[console]::error.writeline("sudo: you must be an administrator to run sudo")
+	exit 1
 }
 
 $a = serialize $args
