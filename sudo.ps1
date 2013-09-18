@@ -59,7 +59,7 @@ if($args[0] -eq '-do') {
 if(is_elevated) {
 	$cmd, $args = @($args)
 	& $cmd @($args)
-	exit
+	exit $lastexitcode
 }
 
 $a = serialize $args
