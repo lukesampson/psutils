@@ -9,7 +9,8 @@ function sudo_do($parent_pid, $dir, $cmd) {
 		
 		$p = new-object diagnostics.process; $start = $p.startinfo
 		$start.filename = "powershell.exe"
-		$start.arguments = "-nologo $cmd"
+		write-host "cmd: $cmd"
+		$start.arguments = "-nologo $cmd;exit `$lastexitcode"
 		$start.useshellexecute = $false
 		$start.redirectstandardoutput = $true
 		$start.redirectstandarderror = $true
@@ -26,6 +27,7 @@ function sudo_do($parent_pid, $dir, $cmd) {
 		}
 		$p.waitforexit()
 		write-host "" -nonewline # for some reason, errors aren't written without this
+		$sw.writeline("0$($p.exitcode)"); $sw.flush() # can't seem to access exitcode for process started with runas
 	} finally {
 		if($sw) { $sw.flush() }
 		if($c -and $c.isconnected) { $c.dispose() }
@@ -43,15 +45,16 @@ function serialize($a) {
 if($args[0] -eq '-do') {
 	$_, $dir, $parent_pid, $cmd = $args
 	$cmd = serialize $cmd
-	$null = sudo_do $parent_pid $dir $cmd
+	sudo_do $parent_pid $dir $cmd
 	exit
 }
 
 $a = serialize $args
 
+$exitcode = 0
 $s = new-object io.pipes.namedpipeserverstream "/tmp/sudo/$pid", 'in'
 try {
-	$p = start powershell.exe -arg "-noexit -nologo -window minimized & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
+	$p = start powershell.exe -arg "-nologo -window minimized & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
 	$s.waitforconnection()
 	$sr = new-object io.streamreader $s
 	$line = $null
@@ -60,9 +63,13 @@ try {
 		$line = $line.substring(1)
 		if($stream -eq '1') { $line }
 		elseif($stream -eq '2') { [console]::error.writeline($line) }
+		elseif($stream -eq '0') { $exitcode = [int]$line }
+		else { "$stream$line" }
 	}
 } catch [InvalidOperationException] {
 	# user didn't provide consent: ignore
 } finally {
 	if($s) { $s.dispose() }
 }
+
+exit $exitcode
