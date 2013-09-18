@@ -5,19 +5,27 @@ function sudo_do($parent_pid, $dir, $cmd) {
 	$c = new-object io.pipes.namedpipeclientstream '.', "/tmp/sudo/$parent_pid", 'out', 'none', 'anonymous'
 	try {
 		$c.connect()
-		$sw = new-object io.streamwriter $c
+		$global:sw = new-object io.streamwriter $c # global so event handler can access
 		
 		$p = new-object diagnostics.process; $start = $p.startinfo
 		$start.filename = "powershell.exe"
 		$start.arguments = "-nologo $cmd"
 		$start.useshellexecute = $false
 		$start.redirectstandardoutput = $true
+		$start.redirectstandarderror = $true
 		$start.workingdirectory = $dir
+		register-objectevent $p errordatareceived -action {
+			$global:sw.writeline("2$($eventargs.data)"); $global:sw.flush();
+		}
 		$p.start()
 
+		$p.beginerrorreadline()
 		$line = $null
-		while($line = $p.standardoutput.readline()) { $sw.writeline($line); $sw.flush() }
-		$p.waitforexit();
+		while($line = $p.standardoutput.readline()) {
+			$sw.writeline("1$line"); $sw.flush()
+		}
+		$p.waitforexit()
+		write-host "" -nonewline # for some reason, errors aren't written without this
 	} finally {
 		if($sw) { $sw.flush() }
 		if($c -and $c.isconnected) { $c.dispose() }
@@ -43,11 +51,16 @@ $a = serialize $args
 
 $s = new-object io.pipes.namedpipeserverstream "/tmp/sudo/$pid", 'in'
 try {
-	$p = start powershell.exe -arg "-nologo -window minimized & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
+	$p = start powershell.exe -arg "-noexit -nologo -window minimized & '$pscommandpath' -do $pwd $pid $a" -verb runas -passthru
 	$s.waitforconnection()
 	$sr = new-object io.streamreader $s
 	$line = $null
-	while($line = $sr.readline()) {	$line }
+	while($line = $sr.readline()) {
+		$stream = $line[0]
+		$line = $line.substring(1)
+		if($stream -eq '1') { $line }
+		elseif($stream -eq '2') { [console]::error.writeline($line) }
+	}
 } catch [InvalidOperationException] {
 	# user didn't provide consent: ignore
 } finally {
