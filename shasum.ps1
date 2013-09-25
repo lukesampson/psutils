@@ -42,7 +42,7 @@ function compute_hash($file, $algname) {
 
 function write_hash($file, $alg, $mode) {
 	if($file -match '\*') { "shasum: $file`: invalid argument"; return }
-	if(!(test-path $file)) { "shasum: $file`: no such file or directory"; return }
+	if(!(test-path $file -pathtype leaf)) { "shasum: $file`: no such file"; return }
 	
 	$hash = compute_hash (resolve-path $file) "SHA$alg"
 	$mode_indicator = switch($mode) {
