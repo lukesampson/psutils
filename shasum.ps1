@@ -6,7 +6,7 @@ function usage {
 Print or check SHA checksums.
 With no FILE, or when FILE is -, read standard input.
 
- -a, --algorithm    1 (default), 224, 256, 384, 512
+ -a, --algorithm    1 (default), 256, 384, 512
  -b, --binary       read files in binary mode (default)
  -c, --check        check SHA sums against given list
  -t, --text         read files in text mode
@@ -55,14 +55,15 @@ function write_hash($file, $alg, $mode) {
 
 $opt, $files, $err = getopt $args 'a:bcpth' @('algorithm=','binary','check','text','portable','help')
 if($err) { "shasum: $err"; exit 1 }
-if(!$files) { "shasum: file is required"; exit 1 }
 
 if($opt.h -or $opt.help) { usage; exit 0 }
+
+if(!$files) { "shasum: file is required"; exit 1 }
 
 $alg = $opt.algorithm;
 if(!$alg) { $alg = $opt.a }
 if(!$alg) { $alg = 1 }
-if(@(1,224,256,384,512) -notcontains $alg) { "shasum: invalid algorithm"; exit 1 }
+if(@(1,256,384,512) -notcontains $alg) { "shasum: invalid algorithm"; exit 1 }
 
 $mode = 'binary'
 if($opt.t -or $opt.text) { $mode = 'text' }
