@@ -28,7 +28,6 @@ for binary, `?' for portable, ` ' for text), and name for each FILE."
 }
 
 function compute_hash($file, $algname) {
-	write-host $file
 	$alg = [system.security.cryptography.hashalgorithm]::create($algname)
 	$fs = [system.io.file]::openread($file)
 	try {
