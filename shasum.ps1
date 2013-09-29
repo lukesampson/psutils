@@ -27,6 +27,8 @@ is to print a line with checksum, a character indicating type (`*'
 for binary, `?' for portable, ` ' for text), and name for each FILE."
 }
 
+$algs = @(1,256,384,512)
+
 function compute_hash($file, $algname) {
 	$alg = [system.security.cryptography.hashalgorithm]::create($algname)
 	$fs = [system.io.file]::openread($file)
@@ -40,16 +42,38 @@ function compute_hash($file, $algname) {
 }
 
 function write_hash($file, $alg, $mode) {
-	if($file -match '\*') { "shasum: $file`: invalid argument"; return }
-	if(!(test-path $file -pathtype leaf)) { "shasum: $file`: no such file"; return }
-	
-	$hash = compute_hash (resolve-path $file) "SHA$alg"
+	if($file -match '\*') { "shasum: $file`: invalid argument"; return $false }
+	if(!(test-path $file -pathtype leaf)) { "shasum: $file`: no such file"; return $false }
+
+	$hash = compute_hash (resolve-path $file) "SHA$alg"	
 	$mode_indicator = switch($mode) {
 		'binary' { '*' }
 		'text' { ' '}
 		'portable' { '?' }
 	}
 	"$hash $mode_indicator$file"
+}
+
+function verify($checkfile) {
+	if(!(test-path $checkfile -pathtype leaf)) { "shasum: $file`: no such file"; return $false }
+
+	$len2alg = @{ 40 = 1; 56 = 224; 64 = 256; 96 = 384; 128 = 512 }
+
+	$lines = gc $checkfile
+	$lines | % {
+		if($_ -match '([^ ]+) (.)(.*)') {
+			$hash, $mode, $file = $matches[1..3]
+			$alg = $len2alg[$hash.length]
+			if($algs -notcontains $alg) {
+				"$file`: FAILED: SHA-$alg not supported"; return 
+			}
+			if(!(test-path $file -pathtype leaf)) {
+				"$file`: FAILED: no such file"; return
+			}
+			$match = $hash -eq (compute_hash (resolve-path $file) "SHA$alg")
+			"$file`: $(if($match) { 'OK' } else { 'FAILED' })"
+		}
+	}
 }
 
 $opt, $files, $err = getopt $args 'a:bcpth' @('algorithm=','binary','check','text','portable','help')
@@ -62,15 +86,17 @@ if(!$files) { "shasum: file is required"; exit 1 }
 $alg = $opt.algorithm;
 if(!$alg) { $alg = $opt.a }
 if(!$alg) { $alg = 1 }
-if(@(1,256,384,512) -notcontains $alg) { "shasum: invalid algorithm"; exit 1 }
+if($algs -notcontains $alg) { "shasum: invalid algorithm"; exit 1 }
 
 $mode = 'binary'
 if($opt.t -or $opt.text) { $mode = 'text' }
 if($opt.p -or $opt.portable) { $mode = 'portable' }
 
-if($mode -eq 'text') { "shasum: text mode not implemented!"; exit 1 }
-
 $check = $opt.c -or $opt.check
-if($check) { "shasum: check not implemented!"; exit 1 }
+if($check) {
+	verify @($files)[0]
+} else {
+	$files | % { write_hash $_ $alg $mode }
+}
 
-$files | % { write_hash $_ $alg $mode }
+exit 0
