@@ -42,8 +42,8 @@ function compute_hash($file, $algname) {
 }
 
 function write_hash($file, $alg, $mode) {
-	if($file -match '\*') { "shasum: $file`: invalid argument"; return $false }
-	if(!(test-path $file -pathtype leaf)) { "shasum: $file`: no such file"; return $false }
+	if($file -match '\*') { "shasum: $file`: invalid argument"; return }
+	if(!(test-path $file -pathtype leaf)) { "shasum: $file`: no such file"; return }
 
 	$hash = compute_hash (resolve-path $file) "SHA$alg"	
 	$mode_indicator = switch($mode) {
@@ -55,7 +55,7 @@ function write_hash($file, $alg, $mode) {
 }
 
 function verify($checkfile) {
-	if(!(test-path $checkfile -pathtype leaf)) { "shasum: $file`: no such file"; return $false }
+	if(!(test-path $checkfile -pathtype leaf)) { "shasum: $file`: no such file"; return }
 
 	$len2alg = @{ 40 = 1; 56 = 224; 64 = 256; 96 = 384; 128 = 512 }
 
