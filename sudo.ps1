@@ -26,11 +26,12 @@ function sudo_do($parent_pid, $dir, $cmd) {
 	$p.waitforexit()
 }
 
-function serialize($a) {
+function serialize($a, $escape) {
 	if($a -is [string] -and $a -match '\s') { return "'$a'" }
 	if($a -is [array]) {
-		return $a | % { (serialize $_) -join ', ' }
+		return $a | % { (serialize $_ $escape) -join ', ' }
 	}
+	if($escape) { return $a -replace '>', '`>' }
 	return $a
 }
 
@@ -40,13 +41,16 @@ if($args[0] -eq '-do') {
 	exit
 }
 
-$a = serialize $args
+$a = serialize $args $true
 
+$savetitle = $host.ui.rawui.windowtitle
 $p = new-object diagnostics.process; $start = $p.startinfo
 $start.filename = "powershell.exe"
-$start.arguments = "-noprofile -noexit & '$pscommandpath' -do $pwd $pid $a"
+$start.arguments = "-noprofile & '$pscommandpath' -do $pwd $pid $a"
 $start.verb = 'runas'
 $start.windowstyle = 'hidden'
 try { $null = $p.start() }
 catch { exit 1 } # user didn't provide consent
 $p.waitforexit()
+
+$host.ui.rawui.windowtitle = $savetitle
