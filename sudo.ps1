@@ -35,7 +35,7 @@ function serialize($a) {
 }
 
 if($args[0] -eq '-do') {
-	$_, $dir, $parent_pid, $cmd = $args
+	$null, $dir, $parent_pid, $cmd = $args
 	$null = sudo_do $parent_pid $dir (serialize $cmd)
 	exit
 }
@@ -47,5 +47,6 @@ $start.filename = "powershell.exe"
 $start.arguments = "-noprofile -noexit & '$pscommandpath' -do $pwd $pid $a"
 $start.verb = 'runas'
 $start.windowstyle = 'hidden'
-$started = $p.start()
+try { $null = $p.start() }
+catch { exit 1 } # user didn't provide consent
 $p.waitforexit()
