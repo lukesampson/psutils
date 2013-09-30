@@ -31,7 +31,7 @@ function serialize($a, $escape) {
 	if($a -is [array]) {
 		return $a | % { (serialize $_ $escape) -join ', ' }
 	}
-	if($escape) { return $a -replace '>', '`>' }
+	if($escape) { return ($a -replace '>', '`>') -replace '&', '`&' }
 	return $a
 }
 
