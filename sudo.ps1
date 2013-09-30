@@ -1,7 +1,5 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
-$id = [Security.Principal.WindowsIdentity]::GetCurrent()
-
 function sudo_do($parent_pid, $dir, $cmd) {
 	$src = 'using System.Runtime.InteropServices;
 	public class Kernel {
