@@ -1,122 +1,43 @@
 # bodge the ln command
 $usage = "usage: ln [-s] <target> [link_name]"
 
-# original Invoke-WindowsAPI by Lee Holmes
-# http://poshcode.org/2189
-function pinvoke {
-    param(
-        ## The name of the DLL that contains the Windows API, such as "kernel32"
-        [string] $DllName,
+$src = '
+using System;
+using System.Runtime.InteropServices;
+public class kernel {
+	[DllImport("kernel32.dll")]
+	[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I1)]
+	public static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, uint dwFlags);
 
-        ## The return type expected from Windows API
-        [Type] $ReturnType,
-
-        ## The name of the Windows API
-        [string] $MethodName,
-
-        ## The types of parameters expected by the Windows API
-        [Type[]] $ParameterTypes,
-
-        ## Parameter values to pass to the Windows API
-        [Object[]] $Parameters
-    )
-
-    Set-StrictMode -Version Latest
-
-    ## Begin to build the dynamic assembly
-    $domain = [AppDomain]::CurrentDomain
-    $name = New-Object Reflection.AssemblyName 'PInvokeAssembly'
-    $assembly = $domain.DefineDynamicAssembly($name, 'Run')
-    $module = $assembly.DefineDynamicModule('PInvokeModule')
-    $type = $module.DefineType('PInvokeType', "Public,BeforeFieldInit")
-
-    ## Go through all of the parameters passed to us.  As we do this,
-    ## we clone the user's inputs into another array that we will use for
-    ## the P/Invoke call.
-    $inputParameters = @()
-    $refParameters = @()
-
-    for($counter = 1; $counter -le $parameterTypes.Length; $counter++)
-    {
-        ## If an item is a PSReference, then the user
-        ## wants an [out] parameter.
-        if($parameterTypes[$counter - 1] -eq [Ref])
-        {
-            ## Remember which parameters are used for [Out] parameters
-            $refParameters += $counter
-
-            ## On the cloned array, we replace the PSReference type with the
-            ## .Net reference type that represents the value of the PSReference,
-            ## and the value with the value held by the PSReference.
-            $parameterTypes[$counter - 1] =
-                $parameters[$counter - 1].Value.GetType().MakeByRefType()
-            $inputParameters += $parameters[$counter - 1].Value
-        }
-        else
-        {
-            ## Otherwise, just add their actual parameter to the
-            ## input array.
-            $inputParameters += $parameters[$counter - 1]
-        }
-    }
-
-    ## Define the actual P/Invoke method, adding the [Out]
-    ## attribute for any parameters that were originally [Ref]
-    ## parameters.
-    $method = $type.DefineMethod(
-        $methodName, 'Public,HideBySig,Static,PinvokeImpl',
-        $returnType, $parameterTypes)
-    foreach($refParameter in $refParameters)
-    {
-        [void] $method.DefineParameter($refParameter, "Out", $null)
-    }
-
-    ## Apply the P/Invoke constructor
-    $ctor = [Runtime.InteropServices.DllImportAttribute].GetConstructor([string])
-    $attr = New-Object Reflection.Emit.CustomAttributeBuilder $ctor, $dllName
-    $method.SetCustomAttribute($attr)
-
-    ## Create the temporary type, and invoke the method.
-    $realType = $type.CreateType()
-
-    $realType.InvokeMember($methodName, 'Public,Static,InvokeMethod', $null, $null,$inputParameters)
-
-    ## Finally, go through all of the reference parameters, and update the
-    ## values of the PSReference objects that the user passed in.
-    foreach($refParameter in $refParameters)
-    {
-        $parameters[$refParameter - 1].Value = $inputParameters[$refParameter - 1]
-    }
-}
+	[DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+	public static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);
+}'
 
 function isadmin {
-    $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-    $p = new-object System.Security.Principal.WindowsPrincipal $id
-    $p.IsInRole("Administrators")
+	$id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+	$p = new-object System.Security.Principal.WindowsPrincipal $id
+	$p.IsInRole("Administrators")
 }
 
 function symlink($target, $link_name, $is_dir) {
-    $dwFlags = 0
-    if($is_dir) { $dwFlags = 1 }
-    $parameterTypes = [string], [string], [int]
-    $parameters = [string] $link_name, [string] $target, $dwFlags
+	# CreateSymbolicLink:
+	#     http://msdn.microsoft.com/en-us/library/aa363866.aspx
+	$dwFlags = 0
+	if($is_dir) { $dwFlags = 1 }
 
-    # CreateSymbolicLink:
-    #     http://msdn.microsoft.com/en-us/library/aa363866.aspx
-    $result = pinvoke "kernel32" ([bool]) "CreateSymbolicLink" $parameterTypes $parameters
+	$kernel = add-type $src -passthru
+	$result = $kernel::createsymboliclink($link_name, $target, $dwFlags)
 
-    if(!$result) { "failed!"; exit 1 } # mysterious
+	if(!$result) { "failed!"; exit 1 } # mysterious
 }
 
 function hardlink($target, $link_name) {
-    $parameterTypes = [string], [string], [intptr]
-    $parameters = [string] $link_name, [string] $target, [intptr]::zero
+	# CreateHardLink:
+	#     http://msdn.microsoft.com/en-us/library/aa363860.aspx
+	$kernel = add-type $src -passthru
+	$result = $kernel::createhardlink($link_name, $target, [intptr]::zero)
 
-    # CreateHardLink:
-    #     http://msdn.microsoft.com/en-us/library/aa363860.aspx
-    $result = pinvoke "kernel32" ([bool]) "CreateHardLink" $parameterTypes $parameters
-
-    if(!$result) { "failed!"; exit 1 } # mysterious
+	if(!$result) { "failed!"; exit 1 } # mysterious
 }
 
 $symbolic = $false
@@ -125,55 +46,55 @@ $link_name = $args[1]
 $is_dir = $false
 
 if($target -like '-s') {
-    $symbolic = $true
-    $target = $args[1]
-    $link_name = $args[2]
+	$symbolic = $true
+	$target = $args[1]
+	$link_name = $args[2]
 }
 
 if(!$target) { "ln: target is required"; $usage; exit 1 }
 if(!$link_name) {
-    # create link in working dir, with same name as target
-    $link_name = "$pwd\$(split-path $target -leaf)"
+	# create link in working dir, with same name as target
+	$link_name = "$pwd\$(split-path $target -leaf)"
 } elseif(!([io.path]::ispathrooted($link_name))) {
-    $link_name = "$pwd\$link_name"
+	$link_name = "$pwd\$link_name"
 }
 
 if(!(test-path $target)) {
-    "ln: $target`: No such file or directory"; exit 1
+	"ln: $target`: No such file or directory"; exit 1
 }
 
 if(test-path $link_name) {
-    "ln: $link_name`: File exists"
+	"ln: $link_name`: File exists"
 }
 
 $target = "$(resolve-path $target)"
 if([io.directory]::exists($target)) {
-    $is_dir = $true
+	$is_dir = $true
 }
 
 if($target -eq $link_name) {
-    "ln: target and link_name are the same"; usage; exit 1
+	"ln: target and link_name are the same"; usage; exit 1
 }
 
 if(!$symbolic -and $is_dir) {
-    "ln: Can't create hard links for directories: use -s for symbolic link"; $usage; exit 1
+	"ln: Can't create hard links for directories: use -s for symbolic link"; $usage; exit 1
 }
 
 if(!(isadmin)) {
-    if(gcm 'sudo' -ea silent) {
-        "ln: Must run elevated: try using 'sudo ln ...'."
-    } else {
-        if(gcm 'scoop' -ea silent) {
-            "ln: Must run elevated: you can install 'sudo' by running 'scoop install sudo'."
-        } else { "ln: Must run elevated" }
-    }
-    exit 1
+	if(gcm 'sudo' -ea silent) {
+		"ln: Must run elevated: try using 'sudo ln ...'."
+	} else {
+		if(gcm 'scoop' -ea silent) {
+			"ln: Must run elevated: you can install 'sudo' by running 'scoop install sudo'."
+		} else { "ln: Must run elevated" }
+	}
+	exit 1
 }
 
 if($symbolic) {
-    symlink $target $link_name $is_dir
+	symlink $target $link_name $is_dir
 } else {
-    hardlink $target $link_name
+	hardlink $target $link_name
 }
 
 exit 0
