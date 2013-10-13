@@ -45,7 +45,8 @@ $a = serialize $args $true
 $savetitle = $host.ui.rawui.windowtitle
 $p = new-object diagnostics.process; $start = $p.startinfo
 $start.filename = "powershell.exe"
-$start.arguments = "-noprofile & '$pscommandpath' -do $pwd $pid $a`nexit `$lastexitcode"
+$wd = convert-path $pwd # convert in case pwd is a PSDrive
+$start.arguments = "-noprofile & '$pscommandpath' -do $wd $pid $a`nexit `$lastexitcode"
 $start.verb = 'runas'
 $start.windowstyle = 'hidden'
 try { $null = $p.start() }
