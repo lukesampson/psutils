@@ -73,7 +73,7 @@ if([io.directory]::exists($target)) {
 }
 
 if($target -eq $link_name) {
-	"ln: target and link_name are the same"; usage; exit 1
+	"ln: target and link_name are the same"; $usage; exit 1
 }
 
 if(!$symbolic -and $is_dir) {
