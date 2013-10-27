@@ -16,7 +16,7 @@ public class kernel {
 function isadmin {
 	$id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 	$p = new-object System.Security.Principal.WindowsPrincipal $id
-	$p.IsInRole("Administrators")
+	$p.isinrole([security.principal.windowsbuiltinrole]::administrator)
 }
 
 function symlink($target, $link_name, $is_dir) {
