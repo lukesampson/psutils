@@ -1,5 +1,14 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
+$id = [security.principal.windowsidentity]::getcurrent()
+
+function is_admin {
+	$name = $id.name -replace '^[^\\]*\\', ''
+	$admin_group = (gwmi win32_group -filter "LocalAccount=True AND SID='S-1-5-32-544'").name # be language-agnostic
+	$res = gwmi win32_groupuser | ? { $_.groupcomponent -match "name=`"$admin_group`"" -and $_.partcomponent -match "name=`"$name`"" }
+	if($res) { $true }
+}
+
 function sudo_do($parent_pid, $dir, $cmd) {
 	$src = 'using System.Runtime.InteropServices;
 	public class Kernel {
@@ -38,6 +47,11 @@ if($args[0] -eq '-do') {
 	$null, $dir, $parent_pid, $cmd = $args
 	$exit_code = sudo_do $parent_pid $dir (serialize $cmd)
 	exit $exit_code
+}
+
+if(!(is_admin)) {
+	[console]::error.writeline("sudo: you must be an administrator to run sudo")
+	exit 1
 }
 
 $a = serialize $args $true
