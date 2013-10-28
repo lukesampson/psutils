@@ -1,8 +1,7 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
-$id = [security.principal.windowsidentity]::getcurrent()
-
 function is_admin {
+	$id = [security.principal.windowsidentity]::getcurrent()
 	$name = $id.name -replace '^[^\\]*\\', ''
 	$admin_group = (gwmi win32_group -filter "LocalAccount=True AND SID='S-1-5-32-544'").name # be language-agnostic
 	$res = gwmi win32_groupuser | ? { $_.groupcomponent -match "name=`"$admin_group`"" -and $_.partcomponent -match "name=`"$name`"" }
