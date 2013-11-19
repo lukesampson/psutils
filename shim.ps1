@@ -1,16 +1,17 @@
-param($path)
+param($path, [switch]$help)
 
 $usage = "usage: shim <path>"
 
 function create_shim($path) {
 	if(!(test-path $path)) { "shim: couldn't find $path"; exit 1 }
 	$path = resolve-path $path # ensure full path
-	
-	$shimdir = "~/appdata/local/shims"
-	if(!test-path $shimdir) { mkdir $shimdir > $null }
-	$shimdir = resolve-path $shimdir
 
-	$fname_stem = [io:path]::getfilenamewithoutextension($path).tolower()
+	$shimdir = "~/appdata/local/shims"
+	if(!(test-path $shimdir)) { mkdir $shimdir > $null }
+	$shimdir = resolve-path $shimdir
+	ensure_in_path $shimdir
+
+	$fname_stem = [io.path]::getfilenamewithoutextension($path).tolower()
 
 	$shim = "$shimdir\$fname_stem.ps1"
 
@@ -26,7 +27,25 @@ function create_shim($path) {
 	}
 }
 
-if(!$path) { "path missing"; $usage; exit 1; }
-if('/?', '-h', '--help' -contains $path) { $usage; exit }
+function env($name,$val='__get') {
+	$target = 'User'
+	if($val -eq '__get') { [environment]::getEnvironmentVariable($name,$target) }
+	else { [environment]::setEnvironmentVariable($name,$val,$target) }
+}
+
+function ensure_in_path($dir) {
+	$path = env 'path'
+	$dir = resolve-path $dir
+	if($path -notmatch [regex]::escape($dir)) {
+		echo "adding $dir to your path"
+		
+		env 'path' "$dir;$path" # for future sessions...
+		$env:path = "$dir;$env:path" # for this session
+	}
+}
+
+if('/?', '--help' -contains $path -or $help) { $usage; exit }
+if(!$path) { "shim: path missing"; $usage; exit 1; }
+
 
 create_shim $path
