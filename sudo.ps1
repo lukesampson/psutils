@@ -1,8 +1,9 @@
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
 function is_admin {
-	$res = net localgroup administrators |? { $_ -match $env:username }
-	if($res) { $true }
+	$admin_group = (gwmi win32_group -filter "LocalAccount=True AND SID='S-1-5-32-544'").name # be language-agnostic
+	$admins = (net localgroup $admin_group) -join "`n" | sls '(?s)-+\n(.*)' |% { $_.matches.groups[1].value }
+	return $admins -split "`n" -match "^$env:username`$"
 }
 
 function sudo_do($parent_pid, $dir, $cmd) {
