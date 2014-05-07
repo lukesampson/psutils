@@ -10,6 +10,6 @@ These are designed to be installed with [Scoop](http://scoop.sh).
 * *say* - An approximation of `[say](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/say.1.html)` from Mac OS X.
 * *shasum* - An approximation of [shasum](http://linux.die.net/man/1/shasum).
 * *sudo* - An approximation of the Unix `sudo` command. Shows a UAC popup window unfortunately.
-* *time* _ An approximation of the Unix `time` command.
+* *time* - An approximation of the Unix `time` command.
 * *touch* - A port of the Unix `touch` command.
 * *vimtutor* - The `vimtutor` that comes with Vim for Windows doesn't work with Scoop. This one does.
