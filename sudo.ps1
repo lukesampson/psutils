@@ -52,11 +52,11 @@ if(!(is_admin)) {
 }
 
 $a = serialize $args $true
+$wd = serialize (convert-path $pwd) # convert-path in case pwd is a PSDrive
 
 $savetitle = $host.ui.rawui.windowtitle
 $p = new-object diagnostics.process; $start = $p.startinfo
 $start.filename = "powershell.exe"
-$wd = convert-path $pwd # convert in case pwd is a PSDrive
 $start.arguments = "-noprofile & '$pscommandpath' -do $wd $pid $a`nexit `$lastexitcode"
 $start.verb = 'runas'
 $start.windowstyle = 'hidden'
