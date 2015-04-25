@@ -67,12 +67,12 @@ if(test-path $link_name) {
 	"ln: $link_name`: File exists"
 }
 
-$target = "$(resolve-path $target)"
-if([io.directory]::exists($target)) {
+$abstarget = "$(resolve-path $target)"
+if([io.directory]::exists($abstarget)) {
 	$is_dir = $true
 }
 
-if($target -eq $link_name) {
+if($abstarget -eq $link_name) {
 	"ln: target and link_name are the same"; $usage; exit 1
 }
 
