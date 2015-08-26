@@ -6,6 +6,6 @@ $params = $list -join ","
 
 if(!$params) { $usage ;exit 1 }
 
-invoke-WebRequest -Uri "http://gitignore.io/api/$params" | select -expandproperty content
+invoke-restmethod -uri "https://www.gitignore.io/api/$params"
 
 exit 0
