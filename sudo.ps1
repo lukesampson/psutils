@@ -49,7 +49,12 @@ if(!(is_admin)) {
 	exit 1
 }
 
-$a = serialize $args $true
+$a = if ($args[0] -eq '-please' -or $args[0] -eq '-plz') {
+	Get-History -Count 1 | select -ExpandProperty CommandLine
+} else {
+	serialize $args $true
+}
+
 $wd = serialize (convert-path $pwd) # convert-path in case pwd is a PSDrive
 
 $savetitle = $host.ui.rawui.windowtitle
