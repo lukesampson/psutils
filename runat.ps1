@@ -30,7 +30,7 @@ for($i=1;$true;$i++) {
 $df = (get-culture).datetimeformat.shortdatepattern -replace '(?<![Md])(M|d)(?!\1)', '$1$1'
 
 # create the task
-& schtasks /create /ru system /rl highest /sc once /tn $tn /tr `"$($c -replace '"', '\"')`" /st $d.tostring("hh:mm") /sd $d.tostring($df)
+& schtasks /create /ru system /rl highest /sc once /tn $tn /tr `"$($c -replace '"', '\"')`" /st $d.tostring("HH:mm") /sd $d.tostring($df)
 
 if($lastexitcode -eq 0) { echo "Task will run '$c' at $d"; exit 0 }
 exit 1;
