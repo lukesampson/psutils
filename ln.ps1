@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 # bodge the ln command
 $usage = "usage: ln [-s] <target> [link_name]"
 

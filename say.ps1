@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 # note: requires getopt.ps1 in the same directory
 # `scoop install say` takes care of this
 . "$psscriptroot\getopt.ps1"

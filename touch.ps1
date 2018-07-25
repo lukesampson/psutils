@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 $usage = "usage:
 touch [-A [-][[hh]mm]SS] [-acm] [-r file] [-t [[CC]YY]MMDDhhmm[.SS]] file ..."
 

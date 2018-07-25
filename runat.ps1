@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 $usage = "usage: runat (time) (command)
     
 e.g. runat 2am shutdown -r -f -c ""restart""";
