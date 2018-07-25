@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 . "$psscriptroot\getopt.ps1"
 
 function usage {

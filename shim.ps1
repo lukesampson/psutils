@@ -1,5 +1,7 @@
 param($path, [switch]$help)
 
+Set-StrictMode -Off;
+
 $usage = "usage: shim <path>"
 
 function create_shim($path) {

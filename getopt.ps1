@@ -9,6 +9,8 @@
 #    a parameter should end with '='
 # returns @(opts hash, rem_args array, error string)
 function getopt($argv, $shortopts, $longopts) {
+	Set-StrictMode -Off;
+
 	$opts = @{}; $rem = @()
 
 	function err($msg) {

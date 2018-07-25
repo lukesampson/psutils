@@ -8,6 +8,8 @@
 # work with Scoop in Powershell
 param($xx)
 
+Set-StrictMode -Off;
+
 if(!$xx) { $xx = (get-uiculture).twoLetterISOLanguageName }
 
 $vim = scoop which vim

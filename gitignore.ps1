@@ -1,3 +1,5 @@
+Set-StrictMode -Off;
+
 $usage = "usage:
 gitignore arg ..."
 
