@@ -3,9 +3,9 @@ Set-StrictMode -Off;
 if(!$args) { "usage: sudo <cmd...>"; exit 1 }
 
 $powershellExe = Get-Process -Id $pid | Select-Object -ExpandProperty Path
-$commandPrefix = ''
+$commandPrefix = "-ExecutionPolicy $(Get-ExecutionPolicy) "
 if ($host.Version.Major -gt 5) {
-    $commandPrefix = '-Command'
+    $commandPrefix += '-Command'
 }
 
 function is_admin {
