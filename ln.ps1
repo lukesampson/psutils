@@ -24,13 +24,24 @@ function isadmin {
 function symlink($target, $link_name, $is_dir) {
 	# CreateSymbolicLink:
 	#     http://msdn.microsoft.com/en-us/library/aa363866.aspx
-	$dwFlags = 0
-	if($is_dir) { $dwFlags = 1 }
+	$dwFlags = 2
+	if($is_dir) { $dwFlags = 3 }
 
 	$kernel = add-type $src -passthru
 	$result = $kernel::createsymboliclink($link_name, $target, $dwFlags)
 
-	if(!$result) { "failed!"; exit 1 } # mysterious
+	if(!$result) {
+		if(!(isadmin)) {
+			if(gcm 'sudo' -ea silent) {
+				"ln: Must run elevated: try using 'sudo ln ...'."
+			} else {
+				if(gcm 'scoop' -ea silent) {
+					"ln: Must run elevated: you can install 'sudo' by running 'scoop install sudo'."
+				} else { "ln: Must run elevated" }
+			}
+		} else { "failed!" } # mysterious
+		exit 1
+	}
 }
 
 function hardlink($target, $link_name) {
@@ -80,17 +91,6 @@ if($abstarget -eq $link_name) {
 
 if(!$symbolic -and $is_dir) {
 	"ln: Can't create hard links for directories: use -s for symbolic link"; $usage; exit 1
-}
-
-if(!(isadmin)) {
-	if(gcm 'sudo' -ea silent) {
-		"ln: Must run elevated: try using 'sudo ln ...'."
-	} else {
-		if(gcm 'scoop' -ea silent) {
-			"ln: Must run elevated: you can install 'sudo' by running 'scoop install sudo'."
-		} else { "ln: Must run elevated" }
-	}
-	exit 1
 }
 
 if($symbolic) {
