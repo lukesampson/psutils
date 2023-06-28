@@ -20,8 +20,8 @@ function create_shim($path) {
 	echo "`$path = '$path'" > $shim
 	echo 'if($myinvocation.expectingInput) { $input | & $path @args } else { & $path @args }' >> $shim
 
-	if($path -match '\.((exe)|(bat)|(cmd))$') {
-		# shim .exe, .bat, .cmd so they can be used by programs with no awareness of PSH
+	if($path -match '\.(exe|bat|cmd|com)$') {
+		# shim .exe, .bat, .cmd, .com so they can be used by programs with no awareness of PSH
 		"@`"$path`" %*" | out-file "$shimdir\$fname_stem.cmd" -encoding oem
 	} elseif($path -match '\.ps1$') {
 		# make ps1 accessible from cmd.exe
