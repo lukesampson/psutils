@@ -1,15 +1,15 @@
 Set-StrictMode -Off;
 
-if(!$args) { "usage: sudo <cmd...>"; exit 1 }
+if (-not $args) { "usage: sudo <cmd...>"; exit 1 }
 
 $powershellExe = Get-Process -Id $pid | Select-Object -ExpandProperty Path
 $commandPrefix = ''
 if ($host.Version.Major -gt 5) {
-    $commandPrefix = '-Command'
+	$commandPrefix = '-Command'
 }
 
 function is_admin {
-	return ([System.Security.Principal.WindowsIdentity]::GetCurrent().UserClaims | ? { $_.Value -eq 'S-1-5-32-544'})
+	return ([System.Security.Principal.WindowsIdentity]::GetCurrent().UserClaims | Where-Object { $_.Value -eq 'S-1-5-32-544' })
 }
 
 function sudo_do($parent_pid, $dir, $cmd) {
@@ -38,21 +38,21 @@ function sudo_do($parent_pid, $dir, $cmd) {
 }
 
 function serialize($a, $escape) {
-	if($a -is [string] -and $a -match '\s') { return "'$a'" }
-	if($a -is [array]) {
-		return $a | % { (serialize $_ $escape) -join ', ' }
+	if ($a -is [string] -and $a -match '\s') { return "'$a'" }
+	if ($a -is [array]) {
+		return $a | ForEach-Object { (serialize $_ $escape) -join ', ' }
 	}
-	if($escape) { return $a -replace '[>&]', '`$0' }
+	if ($escape) { return $a -replace '[>&]', '`$0' }
 	return $a
 }
 
-if($args[0] -eq '-do') {
+if ($args[0] -eq '-do') {
 	$null, $dir, $parent_pid, $cmd = $args
 	$exit_code = sudo_do $parent_pid $dir (serialize $cmd)
 	exit $exit_code
 }
 
-if(!(is_admin)) {
+if (-not (is_admin)) {
 	[console]::error.writeline("sudo: you must be an administrator to run sudo")
 	exit 1
 }
