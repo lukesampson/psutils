@@ -1,3 +1,3 @@
 Set-StrictMode -Off;
 
-sudo powershell
+sudo $(Get-Process -Id $PID).ProcessName
